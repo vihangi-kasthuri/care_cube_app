@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'otp_screen.dart';
 import 'sign_in_screen.dart';
+import '../verify_email_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,19 +13,27 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
 
   bool agree = false;
 
-  Future<void> sendOtp() async {
+  Future<void> createAccount() async {
     final name = nameController.text.trim();
-    final phone = phoneController.text.trim();
+    final email = emailController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty) {
+    if (name.isEmpty || email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill all required fields'),
+        ),
+      );
+      return;
+    }
+
+    if (!email.contains('@') || !email.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address'),
         ),
       );
       return;
@@ -43,20 +51,16 @@ class _LoginScreenState extends State<LoginScreen> {
     final preferences = await SharedPreferences.getInstance();
 
     await preferences.setString('userName', name);
-    await preferences.setString('phoneNumber', phone);
-    await preferences.setString(
-      'email',
-      emailController.text.trim(),
-    );
+    await preferences.setString('email', email);
 
     if (!mounted) return;
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => OtpScreen(
+        builder: (_) => VerifyEmailScreen(
           userName: name,
-          phoneNumber: phone,
+          email: email,
         ),
       ),
     );
@@ -65,7 +69,6 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     nameController.dispose();
-    phoneController.dispose();
     emailController.dispose();
     super.dispose();
   }
@@ -119,32 +122,29 @@ class _LoginScreenState extends State<LoginScreen> {
 
               TextField(
                 controller: nameController,
+                textCapitalization: TextCapitalization.words,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
                   labelText: 'Full Name',
-                  prefixIcon: const Icon(Icons.person),
+                  hintText: 'Enter your full name',
+                  prefixIcon: const Icon(Icons.person_outline),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              TextField(
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  hintText: '07XXXXXXXX',
-                  prefixIcon: const Icon(Icons.phone),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD5E4DF),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF16796F),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -154,13 +154,29 @@ class _LoginScreenState extends State<LoginScreen> {
               TextField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.done,
+                autocorrect: false,
                 decoration: InputDecoration(
-                  labelText: 'Email (Optional)',
-                  prefixIcon: const Icon(Icons.email),
+                  labelText: 'Email Address',
+                  hintText: 'example@gmail.com',
+                  prefixIcon: const Icon(Icons.email_outlined),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFFD5E4DF),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF16796F),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -171,6 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 value: agree,
                 contentPadding: EdgeInsets.zero,
                 controlAffinity: ListTileControlAffinity.leading,
+                activeColor: const Color(0xFF16796F),
                 onChanged: (value) {
                   setState(() {
                     agree = value ?? false;
@@ -178,6 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 },
                 title: const Text(
                   'I agree to the Terms & Conditions',
+                  style: TextStyle(
+                    fontSize: 16,
+                  ),
                 ),
               ),
 
@@ -186,12 +206,12 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(
                 height: 60,
                 child: ElevatedButton.icon(
-                  onPressed: sendOtp,
-                  icon: const Icon(Icons.sms_rounded),
+                  onPressed: createAccount,
+                  icon: const Icon(Icons.email_outlined),
                   label: const Text(
-                    'SEND OTP',
+                    'CREATE ACCOUNT',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 19,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -235,12 +255,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
 
+              const SizedBox(height: 8),
+
               const Text(
-                'Demo OTP: 123456',
+                'A verification link will be sent to your email address.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,
-                  fontSize: 15,
+                  fontSize: 14,
                 ),
               ),
             ],
